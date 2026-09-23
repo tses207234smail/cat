@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校園迷宮解密：處室守護者 (Campus Resource Guardian)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandGreen: '#10B981',
+                        brandBlue: '#0EA5E9',
+                        brandYellow: '#F59E0B',
+                        brandBg: '#F0F9FF',
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f4f6f9;
+            user-select: none;
+        }
+        .animate-bounce-short {
+            animation: bounce 0.8s infinite alternate;
+        }
+        @keyframes bounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-8px); }
+        }
+        .map-building {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .map-building:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Top Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white text-xl font-bold shadow-md">
+                    <i class="fa-solid font-shield-halved"></i>
+                    <i class="fa-solid fa-shield-cat"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-extrabold text-slate-800 leading-tight">校園迷宮解密：處室守護者</h1>
+                    <p class="text-xs text-slate-500 hidden sm:block">Campus Resource Guardian — 108課綱輔導專題遊戲</p>
+                </div>
+            </div>
+
+            <!-- Global Score & Progress -->
+            <div id="game-status-bar" class="hidden flex items-center gap-4">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1 flex items-center gap-2">
+                    <i class="fa-solid fa-star text-amber-400 text-sm"></i>
+                    <span class="text-xs text-slate-600 font-bold">守護積分:</span>
+                    <span id="current-score" class="text-base font-black text-emerald-600">0</span>
+                </div>
+                <div class="w-32 md:w-48 bg-slate-200 rounded-full h-3 overflow-hidden">
+                    <div id="game-progress" class="bg-gradient-to-r from-teal-400 to-emerald-500 h-full w-0 transition-all duration-500"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-5xl mx-auto w-full px-4 py-6 flex-grow flex flex-col justify-center">
+
+        <!-- ==================== STAGE 0: HOME / INTRO ==================== -->
+        <section id="view-stage0" class="block">
+            <div class="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-slate-100 max-w-3xl mx-auto text-center relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-100 rounded-full blur-2xl opacity-60"></div>
+                <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-sky-100 rounded-full blur-2xl opacity-60"></div>
+
+                <div class="relative z-10">
+                    <span class="inline-block px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-extrabold tracking-wide mb-4">
+                        <i class="fa-solid fa-compass mr-1"></i> 國中新生專用 · 處室探索指南
+                    </span>
+                    <h2 class="text-2xl md:text-4xl font-black text-slate-800 mb-4 leading-snug">
+                        歡迎來到國中新生活！<br><span class="text-emerald-600">你需要強大的校園後盾嗎？</span>
+                    </h2>
+                    
+                    <div class="my-6 flex justify-center">
+                        <div class="relative w-32 h-32 md:w-40 md:h-40 bg-gradient-to-tr from-sky-400 to-emerald-400 rounded-full p-1 shadow-lg flex items-center justify-center">
+                            <div class="w-full h-full bg-white rounded-full flex flex-col items-center justify-center overflow-hidden">
+                                <i class="fa-solid fa-user-ninja text-5xl md:text-6xl text-slate-700 mt-2"></i>
+                                <span class="text-[10px] font-bold text-slate-500 mt-1">新鮮人偵探</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-sm md:text-base text-slate-600 leading-relaxed mb-6 max-w-xl mx-auto">
+                        升上國中後，各種學習、人際與生活問題接踵而來！<br>
+                        別擔心，處室不是處罰你的地方，而是你的<b>最強守護者</b>。<br>
+                        完成 3 大校園巡邏任務，解鎖你的專屬校園資源防護網吧！
+                    </p>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-left mb-8 max-w-2xl mx-auto">
+                        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <div class="text-emerald-600 font-bold text-xs mb-1"><i class="fa-solid fa-book-bookmark mr-1"></i>教務處</div>
+                            <div class="text-[11px] text-slate-500">課程、成績、圖書館與設備</div>
+                        </div>
+                        <div class="p-3 bg-sky-50 rounded-xl border border-sky-100">
+                            <div class="text-sky-600 font-bold text-xs mb-1"><i class="fa-solid fa-user-shield mr-1"></i>學務處</div>
+                            <div class="text-[11px] text-slate-500">生活常規、衛生、社團與健康</div>
+                        </div>
+                        <div class="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                            <div class="text-amber-600 font-bold text-xs mb-1"><i class="fa-solid fa-wrench mr-1"></i>總務處</div>
+                            <div class="text-[11px] text-slate-500">校園修繕、修課桌椅與安全</div>
+                        </div>
+                        <div class="p-3 bg-purple-50 rounded-xl border border-purple-100">
+                            <div class="text-purple-600 font-bold text-xs mb-1"><i class="fa-solid fa-heart-pulse mr-1"></i>輔導室</div>
+                            <div class="text-[11px] text-slate-500">心理諮商、性平宣導與測驗</div>
+                        </div>
+                    </div>
+
+                    <button onclick="startGame()" class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+                        <i class="fa-solid fa-rocket mr-2"></i>開始校園巡邏任務！
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== STAGE 1: CADRES & OFFICES MATCHING ==================== -->
+        <section id="view-stage1" class="hidden">
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 max-w-4xl mx-auto">
+                <div class="flex items-center justify-between border-b pb-4 mb-6">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full">第一關：任務 1 / 3</span>
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mt-1">幹部與處室職掌配對大考驗</h2>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400">請點選左側幹部，再點選右側對應處室</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Left Column: Cadres Scenarios -->
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-slate-500 mb-2 flex items-center">
+                            <i class="fa-solid fa-users mr-2 text-emerald-500"></i>1. 班級幹部與情境 (點擊選擇)
+                        </h3>
+                        <div id="cadre-list" class="space-y-2.5">
+                            <!-- Dynamic Content Injected JS -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Target Administrative Offices -->
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-slate-500 mb-2 flex items-center">
+                            <i class="fa-solid fa-sitemap mr-2 text-sky-500"></i>2. 負責行政處室組別 (點擊對應)
+                        </h3>
+                        <div id="office-list" class="space-y-2.5">
+                            <!-- Dynamic Content Injected JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div class="text-xs text-slate-500">
+                        <i class="fa-solid fa-circle-info mr-1 text-sky-500"></i>連線對應即可完成任務解鎖！
+                    </div>
+                    <button id="stage1-next-btn" disabled onclick="finishStage1()" class="px-6 py-2.5 bg-slate-300 text-slate-500 cursor-not-allowed font-bold rounded-xl transition-all">
+                        下一關 <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== STAGE 2: CRISIS HELP MAP MISSION ==================== -->
+        <section id="view-stage2" class="hidden">
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 max-w-4xl mx-auto">
+                <div class="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 mb-4 gap-2">
+                    <div>
+                        <span class="text-xs font-bold text-sky-600 bg-sky-100 px-3 py-1 rounded-full">第二關：任務 2 / 3</span>
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mt-1">校園危機求助通報任務</h2>
+                    </div>
+                    <div class="text-xs bg-amber-50 text-amber-700 px-3 py-2 rounded-xl border border-amber-200">
+                        <i class="fa-solid fa-comment-sms mr-1"></i> 點選左側 NPC 求助訊息，並於地圖尋找最合適救援單位！
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Left: NPC SMS Requests -->
+                    <div class="lg:col-span-5 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-600 flex items-center justify-between">
+                            <span><i class="fa-solid fa-mobile-screen-button text-emerald-500 mr-2"></i>求助簡訊收件匣</span>
+                            <span id="crisis-progress-tag" class="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">已救援 0/4</span>
+                        </h3>
+                        <div id="npc-message-container" class="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
+                            <!-- Dynamic NPC Cards -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Interactive Campus Map -->
+                    <div class="lg:col-span-7 bg-slate-100 rounded-2xl p-4 border border-slate-200 flex flex-col justify-between min-h-[380px]">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-map-location-dot mr-1"></i>幸福國中 Campus Map</span>
+                            <span class="text-[11px] text-slate-400">點擊地圖處室以派駐救援</span>
+                        </div>
+
+                        <!-- Grid Map representation -->
+                        <div class="grid grid-cols-3 gap-2.5 flex-grow">
+                            <button onclick="checkMapTarget('academic')" class="map-building bg-white border-2 border-emerald-200 hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center justify-center text-center shadow-sm">
+                                <i class="fa-solid fa-graduation-cap text-2xl text-emerald-600 mb-1"></i>
+                                <span class="font-bold text-xs text-slate-700">教務處</span>
+                                <span class="text-[10px] text-slate-400">教學 / 設備 / 註冊</span>
+                            </button>
+
+                            <button onclick="checkMapTarget('student')" class="map-building bg-white border-2 border-sky-200 hover:border-sky-500 rounded-xl p-3 flex flex-col items-center justify-center text-center shadow-sm">
+                                <i class="fa-solid fa-shield-cat text-2xl text-sky-600 mb-1"></i>
+                                <span class="font-bold text-xs text-slate-700">學務處</span>
+                                <span class="text-[10px] text-slate-400">生教 / 訓育 / 體育</span>
+                            </button>
+
+                            <button onclick="checkMapTarget('general')" class="map-building bg-white border-2 border-amber-200 hover:border-amber-500 rounded-xl p-3 flex flex-col items-center justify-center text-center shadow-sm">
+                                <i class="fa-solid fa-wrench text-2xl text-amber-600 mb-1"></i>
+                                <span class="font-bold text-xs text-slate-700">總務處</span>
+                                <span class="text-[10px] text-slate-400">事務 / 出納 / 文書</span>
+                            </button>
+
+                            <button onclick="checkMapTarget('counseling')" class="map-building bg-white border-2 border-purple-200 hover:border-purple-500 rounded-xl p-3 flex flex-col items-center justify-center text-center shadow-sm">
+                                <i class="fa-solid fa-heart text-2xl text-purple-600 mb-1"></i>
+                                <span class="font-bold text-xs text-slate-700">輔導室</span>
+                                <span class="text-[10px] text-slate-400">輔導 / 資料 / 特教</span>
+                            </button>
+
+                            <button onclick="checkMapTarget('health')" class="map-building bg-white border-2 border-rose-200 hover:border-rose-500 rounded-xl p-3 flex flex-col items-center justify-center text-center shadow-sm">
+                                <i class="fa-solid fa-kit-medical text-2xl text-rose-500 mb-1"></i>
+                                <span class="font-bold text-xs text-slate-700">健康中心</span>
+                                <span class="text-[10px] text-slate-400">緊急傷患與傷口護理</span>
+                            </button>
+
+                            <button onclick="checkMapTarget('library')" class="map-building bg-white border-2 border-teal-200 hover:border-teal-500 rounded-xl p-3 flex flex-col items-center justify-center text-center shadow-sm">
+                                <i class="fa-solid fa-book text-2xl text-teal-600 mb-1"></i>
+                                <span class="font-bold text-xs text-slate-700">圖書館</span>
+                                <span class="text-[10px] text-slate-400">借還書 / 自習資源</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-between items-center border-t pt-4">
+                    <div id="stage2-hint" class="text-xs text-slate-500">
+                        <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>請先選擇要救援的求助簡訊。
+                    </div>
+                    <button id="stage2-next-btn" disabled onclick="finishStage2()" class="px-6 py-2.5 bg-slate-300 text-slate-500 cursor-not-allowed font-bold rounded-xl transition-all">
+                        下一關 <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== STAGE 3: RESOURCE SHIELD NET ==================== -->
+        <section id="view-stage3" class="hidden">
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 max-w-3xl mx-auto">
+                <div class="border-b pb-4 mb-6">
+                    <span class="text-xs font-bold text-purple-600 bg-purple-100 px-3 py-1 rounded-full">第三關：任務 3 / 3</span>
+                    <h2 class="text-xl md:text-2xl font-bold text-slate-800 mt-1">校園資源防護網連線</h2>
+                    <p class="text-xs text-slate-500 mt-1">面對複雜的國中生活困境，單一方法是不夠的！請建構「人、事、物」多重求助防護網。</p>
+                </div>
+
+                <!-- Complex Scenario Box -->
+                <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-2xl p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center flex-shrink-0 font-bold">
+                            小明
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-purple-900 text-sm">【複合式生活困境情境】</h3>
+                            <p class="text-xs text-purple-800 mt-1 leading-relaxed">
+                                「段考即將到來，阿明發現數學有好多單元聽不懂，成績下滑壓力極大！晚上輾轉難眠、心情沮喪，又害怕回家被父母責罵……」
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-600 mb-2">
+                        <i class="fa-solid fa-list-check text-emerald-500 mr-1"></i> 請勾選 3 個最完善的支援解決方案組合（已勾選 <span id="shield-count" class="text-emerald-600">0</span>/3）：
+                    </label>
+
+                    <div id="shield-options-container" class="space-y-2.5">
+                        <!-- Dynamic Checkbox Options -->
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center border-t pt-4">
+                    <div class="text-xs text-slate-400">選對 3 個正向資源管道，即可完成最終連線！</div>
+                    <button id="stage3-next-btn" disabled onclick="finishStage3()" class="px-6 py-2.5 bg-slate-300 text-slate-500 cursor-not-allowed font-bold rounded-xl transition-all">
+                        查看巡邏結果 <i class="fa-solid fa-check-double ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== STAGE 4: RESULT & REFLECTION ==================== -->
+        <section id="view-stage4" class="hidden">
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-2xl border border-slate-100 max-w-4xl mx-auto">
+                <div class="text-center mb-6">
+                    <span class="inline-block px-4 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-extrabold mb-2">
+                        🎉 巡邏任務順利達成！
+                    </span>
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-800">校園守護結果與資源地圖</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <!-- Score Card -->
+                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl p-5 text-center flex flex-col justify-center items-center shadow-md">
+                        <span class="text-xs opacity-80">校園救援成功率</span>
+                        <div class="text-4xl font-black my-1"><span id="final-rate">0</span>%</div>
+                        <span id="final-badge-text" class="text-xs bg-white/20 px-3 py-1 rounded-full font-bold">5星級校園守護大師</span>
+                    </div>
+
+                    <!-- Badge Icon -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center flex flex-col justify-center items-center">
+                        <div class="w-16 h-16 rounded-full bg-amber-400 text-white flex items-center justify-center text-3xl mb-2 shadow-inner">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-700">獲得勳章</span>
+                        <span class="text-xs text-amber-700 font-extrabold mt-0.5">校園資源探索達人</span>
+                    </div>
+
+                    <!-- Reflection Question Card -->
+                    <div class="bg-sky-50 border border-sky-200 rounded-2xl p-4 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-sky-700 flex items-center">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i>課後學習小反思
+                            </span>
+                            <p class="text-[11px] text-slate-600 mt-1">未來在國中遇到困境時，你最想先去哪一個處室找哪位師長幫忙？</p>
+                        </div>
+                        <input type="text" id="user-reflection" placeholder="例如：去輔導室找輔導老師聊聊天..." class="w-full text-xs p-2 rounded-lg border border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400 mt-2">
+                    </div>
+                </div>
+
+                <!-- Printable/Downloadable Guardian Map Card -->
+                <div id="guardian-card" class="bg-gradient-to-b from-slate-50 to-white border-2 border-emerald-500/30 rounded-2xl p-5 mb-6 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-emerald-600 text-xl"></i>
+                            <h3 class="font-bold text-slate-800 text-sm">【我的國中校園資源求助懶人地圖】</h3>
+                        </div>
+                        <span class="text-[10px] text-slate-400">國中生求助指南卡</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                        <div class="bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100">
+                            <div class="font-bold text-emerald-800 mb-1"><i class="fa-solid fa-book mr-1"></i>教務處</div>
+                            <ul class="text-[11px] text-slate-600 space-y-0.5">
+                                <li>• 教課、成績與課表</li>
+                                <li>• 教室日誌領取(教學組)</li>
+                                <li>• 圖書館與各項設備</li>
+                            </ul>
+                        </div>
+                        <div class="bg-sky-50/60 p-2.5 rounded-xl border border-sky-100">
+                            <div class="font-bold text-sky-800 mb-1"><i class="fa-solid fa-user-shield mr-1"></i>學務處</div>
+                            <ul class="text-[11px] text-slate-600 space-y-0.5">
+                                <li>• 霸凌性騷通報(生教組)</li>
+                                <li>• 掃具與回收(衛生組)</li>
+                                <li>• 社團與健康中心處置</li>
+                            </ul>
+                        </div>
+                        <div class="bg-amber-50/60 p-2.5 rounded-xl border border-amber-100">
+                            <div class="font-bold text-amber-800 mb-1"><i class="fa-solid fa-wrench mr-1"></i>總務處</div>
+                            <ul class="text-[11px] text-slate-600 space-y-0.5">
+                                <li>• 課桌椅/水電報修</li>
+                                <li>• 校園安全公物維護</li>
+                                <li>• 學雜費繳費(出納組)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-purple-50/60 p-2.5 rounded-xl border border-purple-100">
+                            <div class="font-bold text-purple-800 mb-1"><i class="fa-solid fa-heart mr-1"></i>輔導室</div>
+                            <ul class="text-[11px] text-slate-600 space-y-0.5">
+                                <li>• 心理諮商(輔導組)</li>
+                                <li>• 心理測驗與資料(資料組)</li>
+                                <li>• 生涯發展與特教資源</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-3">
+                    <button onclick="restartGame()" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-rotate-right mr-2"></i>再玩一次
+                    </button>
+                    <button onclick="downloadGuardianCard()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center">
+                        <i class="fa-solid fa-download mr-2"></i>列印 / 保存守護大師卡
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Feedback Dialog -->
+    <div id="feedback-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 transform transition-all">
+            <div id="modal-icon-container" class="w-12 h-12 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
+                <i id="modal-icon" class="fa-solid fa-check"></i>
+            </div>
+            <h3 id="modal-title" class="text-lg font-bold text-center text-slate-800 mb-2">提示標題</h3>
+            <p id="modal-msg" class="text-xs md:text-sm text-slate-600 leading-relaxed mb-5 text-center">提示內文</p>
+            <button onclick="closeModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs transition-all">
+                我知道了，繼續任務
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ==================== GAME STATE & DATA ==================== */
+        let gameState = {
+            score: 0,
+            stage: 0,
+            stage1Matched: 0,
+            stage2Solved: 0,
+            selectedCadre: null,
+            selectedOffice: null,
+            activeCrisisIndex: null,
+            selectedShields: [],
+            stage1Total: 4,
+            stage2Total: 4
+        };
+
+        // Sound synthesizer using Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                osc.frequency.setValueAtTime(180, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            }
+        }
+
+        /* --- Stage 1 Data --- */
+        const stage1Cadres = [
+            { id: 'c1', title: '學藝股長', text: '每日需要領取與繳交「教室日誌」', target: 'o1' },
+            { id: 'c2', title: '衛生股長', text: '需要領取外掃區「掃具」與處理資源回收', target: 'o2' },
+            { id: 'c3', title: '設備股長', text: '發現教室「燈管閃爍與課桌椅損壞」需要報修', target: 'o3' },
+            { id: 'c4', title: '輔導股長', text: '協助宣導「心理健康、性平與班級心理測驗」', target: 'o4' }
+        ];
+
+        const stage1Offices = [
+            { id: 'o1', title: '教務處【教學組】', desc: '掌理課程、教室日誌與學業成績' },
+            { id: 'o2', title: '學務處【衛生組】', desc: '掌理校園環境、清潔掃具與整潔活動' },
+            { id: 'o3', title: '總務處【事務組】', desc: '掌理校園修繕、公物採購與財產維護' },
+            { id: 'o4', title: '輔導室【資料組】', desc: '掌理學生輔導資料、心理測驗與生涯資訊' }
+        ];
+
+        /* --- Stage 2 Data (Crisis SMS) --- */
+        const stage2Crises = [
+            {
+                id: 0,
+                npc: '小莉 (七年級新生)',
+                msg: '「上課到一半肚子劇痛、發燒，需要傷患處理與觀察…」',
+                target: 'health',
+                officeName: '健康中心 / 學務處',
+                explanation: '【健康中心】隸屬於學務處（或由衛保組督導），專門處理學生突發發燒、體育課受傷等緊急護理！'
+            },
+            {
+                id: 1,
+                npc: '阿強 (班長)',
+                msg: '「同學在網路上寫『連長相都白目』，言語嘲諷排擠讓我非常不舒服…」',
+                target: 'student',
+                officeName: '學務處【生活教育組】',
+                explanation: '【學務處生教組】負責友善校園、霸凌防治與網路言語霸凌事件通報，能提供即時的校安防護！'
+            },
+            {
+                id: 2,
+                npc: '小美 (課業受挫)',
+                msg: '「考這種分數怎麼辦？回家一定被罵，成績壓力很大、心情非常低落…」',
+                target: 'counseling',
+                officeName: '輔導室【輔導組】',
+                explanation: '【輔導室輔導組】提供專人心理諮商與情緒紓解，老師會傾聽你的心聲，陪伴你面對壓力！'
+            },
+            {
+                id: 3,
+                npc: '小傑 (設備股長)',
+                msg: '「班上教室水龍頭關不緊、水流不止，燈管也閃爍壞掉了！」',
+                target: 'general',
+                officeName: '總務處【事務組】',
+                explanation: '【總務處事務組】是校園修繕大師，舉凡水龍頭修復、燈管更換、課桌椅補修都找他們！'
+            }
+        ];
+
+        /* --- Stage 3 Data (Shield Net Options) --- */
+        const stage3Options = [
+            { id: 's1', text: '前往【教務處/圖書館】借閱相關輔導書籍或請教科任老師課業', correct: true },
+            { id: 's2', text: '前往【輔導室】找輔導老師進行考試焦慮心理諮商與情緒紓解', correct: true },
+            { id: 's3', text: '尋求【同學、導師或學長姐】請教數學題目與讀書方法', correct: true },
+            { id: 's4', text: '決定假裝生病請假躲避段考（錯誤避事模式）', correct: false },
+            { id: 's5', text: '獨自沉迷網路遊戲紓壓，不管考試壓力（逃避心態）', correct: false }
+        ];
+
+        /* ==================== CORE FUNCTIONS ==================== */
+        function startGame() {
+            playSound('click');
+            gameState.score = 0;
+            gameState.stage = 1;
+            document.getElementById('game-status-bar').classList.remove('hidden');
+            updateUI();
+            initStage1();
+            showView('view-stage1');
+        }
+
+        function showView(viewId) {
+            ['view-stage0', 'view-stage1', 'view-stage2', 'view-stage3', 'view-stage4'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        function addScore(points) {
+            gameState.score += points;
+            document.getElementById('current-score').innerText = gameState.score;
+        }
+
+        function updateUI() {
+            document.getElementById('current-score').innerText = gameState.score;
+            let progress = (gameState.stage / 4) * 100;
+            document.getElementById('game-progress').style.width = progress + '%';
+        }
+
+        /* ==================== STAGE 1 LOGIC ==================== */
+        function initStage1() {
+            gameState.stage1Matched = 0;
+            gameState.selectedCadre = null;
+            gameState.selectedOffice = null;
+
+            const cadreListEl = document.getElementById('cadre-list');
+            const officeListEl = document.getElementById('office-list');
+
+            cadreListEl.innerHTML = stage1Cadres.map(c => `
+                <div id="cadre-${c.id}" onclick="selectCadre('${c.id}')" class="p-3 bg-slate-50 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-emerald-400 transition-all flex flex-col">
+                    <span class="font-bold text-xs text-emerald-700 mb-0.5"><i class="fa-solid fa-user-gear mr-1"></i>${c.title}</span>
+                    <span class="text-xs text-slate-600">${c.text}</span>
+                </div>
+            `).join('');
+
+            // Shuffle offices for variety
+            let shuffledOffices = [...stage1Offices].sort(() => Math.random() - 0.5);
+
+            officeListEl.innerHTML = shuffledOffices.map(o => `
+                <div id="office-${o.id}" onclick="selectOffice('${o.id}')" class="p-3 bg-slate-50 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-sky-400 transition-all flex flex-col">
+                    <span class="font-bold text-xs text-sky-700 mb-0.5"><i class="fa-solid fa-building mr-1"></i>${o.title}</span>
+                    <span class="text-[11px] text-slate-500">${o.desc}</span>
+                </div>
+            `).join('');
+        }
+
+        function selectCadre(id) {
+            playSound('click');
+            stage1Cadres.forEach(c => {
+                const el = document.getElementById(`cadre-${c.id}`);
+                if (el && !el.classList.contains('bg-emerald-100')) {
+                    el.classList.remove('border-emerald-500', 'bg-emerald-50');
+                    el.classList.add('border-slate-200');
+                }
+            });
+
+            const currentEl = document.getElementById(`cadre-${id}`);
+            if (!currentEl.classList.contains('bg-emerald-100')) {
+                currentEl.classList.add('border-emerald-500', 'bg-emerald-50');
+                gameState.selectedCadre = id;
+                checkStage1Pair();
+            }
+        }
+
+        function selectOffice(id) {
+            playSound('click');
+            stage1Offices.forEach(o => {
+                const el = document.getElementById(`office-${o.id}`);
+                if (el && !el.classList.contains('bg-emerald-100')) {
+                    el.classList.remove('border-sky-500', 'bg-sky-50');
+                    el.classList.add('border-slate-200');
+                }
+            });
+
+            const currentEl = document.getElementById(`office-${id}`);
+            if (!currentEl.classList.contains('bg-emerald-100')) {
+                currentEl.classList.add('border-sky-500', 'bg-sky-50');
+                gameState.selectedOffice = id;
+                checkStage1Pair();
+            }
+        }
+
+        function checkStage1Pair() {
+            if (gameState.selectedCadre && gameState.selectedOffice) {
+                const cadreObj = stage1Cadres.find(c => c.id === gameState.selectedCadre);
+
+                if (cadreObj.target === gameState.selectedOffice) {
+                    // Match Success!
+                    playSound('correct');
+                    addScore(25);
+                    gameState.stage1Matched++;
+
+                    const cEl = document.getElementById(`cadre-${gameState.selectedCadre}`);
+                    const oEl = document.getElementById(`office-${gameState.selectedOffice}`);
+
+                    cEl.className = "p-3 bg-emerald-100 border-2 border-emerald-500 rounded-xl flex flex-col pointer-events-none";
+                    cEl.innerHTML += `<span class="text-[10px] font-bold text-emerald-700 mt-1"><i class="fa-solid fa-circle-check mr-1"></i>已配對成功</span>`;
+
+                    oEl.className = "p-3 bg-emerald-100 border-2 border-emerald-500 rounded-xl flex flex-col pointer-events-none";
+                    oEl.innerHTML += `<span class="text-[10px] font-bold text-emerald-700 mt-1"><i class="fa-solid fa-circle-check mr-1"></i>已配對成功</span>`;
+
+                    gameState.selectedCadre = null;
+                    gameState.selectedOffice = null;
+
+                    if (gameState.stage1Matched === gameState.stage1Total) {
+                        const nextBtn = document.getElementById('stage1-next-btn');
+                        nextBtn.disabled = false;
+                        nextBtn.className = "px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer animate-pulse";
+                        showModal('配對全部正確！', '太棒了！你清楚了解各幹部與對應處室組別的完美搭配！', 'success');
+                    }
+                } else {
+                    // Match Failed
+                    playSound('wrong');
+                    showModal('配對不正確喔！', `【提示】${cadreObj.title}的職務需要尋找對應的處室功能，再試試看吧！`, 'error');
+                    
+                    // Reset selection visuals
+                    const cEl = document.getElementById(`cadre-${gameState.selectedCadre}`);
+                    const oEl = document.getElementById(`office-${gameState.selectedOffice}`);
+                    if(cEl) cEl.classList.remove('border-emerald-500', 'bg-emerald-50');
+                    if(oEl) oEl.classList.remove('border-sky-500', 'bg-sky-50');
+
+                    gameState.selectedCadre = null;
+                    gameState.selectedOffice = null;
+                }
+            }
+        }
+
+        function finishStage1() {
+            playSound('click');
+            gameState.stage = 2;
+            updateUI();
+            initStage2();
+            showView('view-stage2');
+        }
+
+        /* ==================== STAGE 2 LOGIC ==================== */
+        function initStage2() {
+            gameState.stage2Solved = 0;
+            gameState.activeCrisisIndex = null;
+            renderStage2Messages();
+        }
+
+        function renderStage2Messages() {
+            const container = document.getElementById('npc-message-container');
+            container.innerHTML = stage2Crises.map((c, idx) => `
+                <div id="crisis-card-${idx}" onclick="selectCrisis(${idx})" class="p-3 bg-white border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-sky-400 transition-all flex flex-col">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-xs text-slate-700"><i class="fa-solid fa-circle-user text-sky-500 mr-1"></i>${c.npc}</span>
+                        <span id="crisis-status-${idx}" class="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-bold">待救援</span>
+                    </div>
+                    <p class="text-xs text-slate-600">${c.msg}</p>
+                </div>
+            `).join('');
+
+            document.getElementById('crisis-progress-tag').innerText = `已救援 ${gameState.stage2Solved}/4`;
+        }
+
+        function selectCrisis(idx) {
+            playSound('click');
+            if (stage2Crises[idx].solved) return;
+
+            gameState.activeCrisisIndex = idx;
+
+            stage2Crises.forEach((c, i) => {
+                const card = document.getElementById(`crisis-card-${i}`);
+                if (card && !c.solved) {
+                    card.classList.remove('border-sky-500', 'bg-sky-50');
+                    card.classList.add('border-slate-200');
+                }
+            });
+
+            const activeCard = document.getElementById(`crisis-card-${idx}`);
+            activeCard.classList.add('border-sky-500', 'bg-sky-50');
+
+            document.getElementById('stage2-hint').innerHTML = `
+                <i class="fa-solid fa-bullhorn text-sky-500 mr-1"></i>已選擇【${stage2Crises[idx].npc}】的求助，請在右側地圖點選正確處室！
+            `;
+        }
+
+        function checkMapTarget(targetKey) {
+            if (gameState.activeCrisisIndex === null) {
+                showModal('請先選擇求助訊息', '請先點選左側其中一位同學的求助簡訊，再選擇地圖處室！', 'info');
+                return;
+            }
+
+            const currentCrisis = stage2Crises[gameState.activeCrisisIndex];
+
+            if (currentCrisis.target === targetKey) {
+                // Correct match
+                playSound('correct');
+                addScore(25);
+                currentCrisis.solved = true;
+                gameState.stage2Solved++;
+
+                const card = document.getElementById(`crisis-card-${gameState.activeCrisisIndex}`);
+                card.className = "p-3 bg-emerald-50 border-2 border-emerald-400 rounded-2xl opacity-80 pointer-events-none";
+                document.getElementById(`crisis-status-${gameState.activeCrisisIndex}`).className = "text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-bold";
+                document.getElementById(`crisis-status-${gameState.activeCrisisIndex}`).innerText = "已順利救援";
+
+                showModal('通報救援成功！', currentCrisis.explanation, 'success');
+
+                gameState.activeCrisisIndex = null;
+                document.getElementById('crisis-progress-tag').innerText = `已救援 ${gameState.stage2Solved}/4`;
+                document.getElementById('stage2-hint').innerHTML = `<i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>救援成功！請繼續點選下一則求助訊息。`;
+
+                if (gameState.stage2Solved === gameState.stage2Total) {
+                    const nextBtn = document.getElementById('stage2-next-btn');
+                    nextBtn.disabled = false;
+                    nextBtn.className = "px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer animate-pulse";
+                }
+            } else {
+                // Incorrect target
+                playSound('wrong');
+                showModal('救助單位不精準喔！', `該處室並非處理此類危機的最主要權責單位，再想想看！`, 'error');
+            }
+        }
+
+        function finishStage2() {
+            playSound('click');
+            gameState.stage = 3;
+            updateUI();
+            initStage3();
+            showView('view-stage3');
+        }
+
+        /* ==================== STAGE 3 LOGIC ==================== */
+        function initStage3() {
+            gameState.selectedShields = [];
+            const container = document.getElementById('shield-options-container');
+
+            container.innerHTML = stage3Options.map((opt, idx) => `
+                <div id="shield-opt-${idx}" onclick="toggleShieldOption(${idx})" class="p-3 bg-slate-50 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-300 transition-all flex items-center gap-3">
+                    <div id="shield-chk-${idx}" class="w-5 h-5 rounded-md border-2 border-slate-300 flex items-center justify-center text-white text-xs">
+                        <i class="fa-solid fa-check hidden"></i>
+                    </div>
+                    <span class="text-xs text-slate-700 font-medium">${opt.text}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleShieldOption(idx) {
+            playSound('click');
+            const pos = gameState.selectedShields.indexOf(idx);
+
+            if (pos > -1) {
+                gameState.selectedShields.splice(pos, 1);
+            } else {
+                if (gameState.selectedShields.length >= 3) {
+                    showModal('最多選擇 3 項', '請勾選 3 個最正向完善的解答組合即可！', 'info');
+                    return;
+                }
+                gameState.selectedShields.push(idx);
+            }
+
+            // Update UI
+            stage3Options.forEach((_, i) => {
+                const card = document.getElementById(`shield-opt-${i}`);
+                const chk = document.getElementById(`shield-chk-${i}`);
+                const icon = chk.querySelector('i');
+
+                if (gameState.selectedShields.includes(i)) {
+                    card.classList.add('border-purple-500', 'bg-purple-50');
+                    chk.classList.add('bg-purple-600', 'border-purple-600');
+                    icon.classList.remove('hidden');
+                } else {
+                    card.classList.remove('border-purple-500', 'bg-purple-50');
+                    chk.classList.remove('bg-purple-600', 'border-purple-600');
+                    icon.classList.add('hidden');
+                }
+            });
+
+            document.getElementById('shield-count').innerText = gameState.selectedShields.length;
+
+            const nextBtn = document.getElementById('stage3-next-btn');
+            if (gameState.selectedShields.length === 3) {
+                nextBtn.disabled = false;
+                nextBtn.className = "px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer animate-pulse";
+            } else {
+                nextBtn.disabled = true;
+                nextBtn.className = "px-6 py-2.5 bg-slate-300 text-slate-500 cursor-not-allowed font-bold rounded-xl transition-all";
+            }
+        }
+
+        function finishStage3() {
+            playSound('click');
+            // Check correct choices
+            let correctCount = 0;
+            gameState.selectedShields.forEach(idx => {
+                if (stage3Options[idx].correct) correctCount++;
+            });
+
+            if (correctCount === 3) {
+                addScore(50);
+                playSound('correct');
+            } else {
+                addScore(correctCount * 15);
+            }
+
+            gameState.stage = 4;
+            updateUI();
+            renderStage4();
+            showView('view-stage4');
+        }
+
+        /* ==================== STAGE 4 LOGIC ==================== */
+        function renderStage4() {
+            const maxScore = 150;
+            const rate = Math.min(100, Math.round((gameState.score / maxScore) * 100));
+            document.getElementById('final-rate').innerText = rate;
+
+            let badgeText = "5星級校園守護大師";
+            if (rate < 60) badgeText = "校園新星巡邏員";
+            else if (rate < 85) badgeText = "校園資源守護使者";
+
+            document.getElementById('final-badge-text').innerText = badgeText;
+        }
+
+        function downloadGuardianCard() {
+            playSound('click');
+            window.print();
+        }
+
+        function restartGame() {
+            playSound('click');
+            gameState = {
+                score: 0,
+                stage: 0,
+                stage1Matched: 0,
+                stage2Solved: 0,
+                selectedCadre: null,
+                selectedOffice: null,
+                activeCrisisIndex: null,
+                selectedShields: [],
+                stage1Total: 4,
+                stage2Total: 4
+            };
+            stage2Crises.forEach(c => c.solved = false);
+            showView('view-stage0');
+            document.getElementById('game-status-bar').classList.add('hidden');
+        }
+
+        /* Modal Dialog Utility */
+        function showModal(title, message, type = 'info') {
+            const modal = document.getElementById('feedback-modal');
+            const iconContainer = document.getElementById('modal-icon-container');
+            const icon = document.getElementById('modal-icon');
+
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = message;
+
+            if (type === 'success') {
+                iconContainer.className = "w-12 h-12 rounded-full flex items-center justify-center text-2xl mx-auto mb-3 bg-emerald-100 text-emerald-600";
+                icon.className = "fa-solid fa-circle-check";
+            } else if (type === 'error') {
+                iconContainer.className = "w-12 h-12 rounded-full flex items-center justify-center text-2xl mx-auto mb-3 bg-rose-100 text-rose-600";
+                icon.className = "fa-solid fa-triangle-exclamation";
+            } else {
+                iconContainer.className = "w-12 h-12 rounded-full flex items-center justify-center text-2xl mx-auto mb-3 bg-sky-100 text-sky-600";
+                icon.className = "fa-solid fa-circle-info";
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            playSound('click');
+            document.getElementById('feedback-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
